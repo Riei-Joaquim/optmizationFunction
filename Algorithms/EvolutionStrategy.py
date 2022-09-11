@@ -1,6 +1,6 @@
 import numpy as np
-from AckleyFunct import Ackley
-from Individuo import Individuo
+from Functions.AckleyFunct import Ackley
+from Individual.Individuo import Individuo
 
 class EvolutionStrategy():
     def __init__(self, lowerBound, upperBound, populationSize, parentsSize):
@@ -20,8 +20,11 @@ class EvolutionStrategy():
     def initPopulation(self):
         for _ in range(self.populationSize):
             ind = np.random.uniform(self.xMin, self.xMax, self.dim)
-            fit = self.benchMark.eval(ind)
+            fit = self.fitness(ind)
             self.population.append(Individuo(ind, fit))
+    
+    def fitness(self, X):
+        return self.benchMark.eval(X)
     
     def isConverged(self, it):
         if self.bestIndGenIt == -1 or self.bestInd is None:
@@ -43,7 +46,5 @@ class EvolutionStrategy():
         if self.bestInd is None or self.population[0].fitness < self.bestInd.fitness:
             self.bestIndGenIt = it 
             self.bestInd = self.population[0]
-    
-    
 
     
