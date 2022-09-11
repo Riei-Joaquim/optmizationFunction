@@ -6,22 +6,27 @@ class EvolutionStrategy():
     def __init__(self, lowerBound, upperBound, populationSize, parentsSize):
         self.xMax = upperBound
         self.xMin = lowerBound
+        self.sigmaMaxInitial = 4
+        self.sigmaMin = 0.5
         self.populationSize = populationSize
         self.sonSize = 7* self.populationSize
         self.dim = 30
         self.parentsSize = parentsSize
         self.benchMark = Ackley(20, 0.2, 2*np.pi, self.dim)
         self.population = []
-        self.tau = 1/np.sqrt(self.dim)
+        self.tau_global = 1/np.sqrt(2 * self.dim)
+        self.tau_fine = 1/np.sqrt(2 * np.sqrt(self.dim))
         self.bestInd = None
         self.bestIndGenIt = -1
         self.MaxWaitForImp = 100
 
     def initPopulation(self):
         for _ in range(self.populationSize):
-            ind = np.random.uniform(self.xMin, self.xMax, self.dim)
-            fit = self.fitness(ind)
-            self.population.append(Individuo(ind, fit))
+            X = np.random.uniform(self.xMin, self.xMax, self.dim)
+            sigma = np.random.uniform(self.sigmaMin, self.sigmaMaxInitial, self.dim)
+            
+            fit = self.fitness(X)
+            self.population.append(Individuo(X, sigma, fit))
     
     def fitness(self, X):
         return self.benchMark.eval(X)
@@ -47,4 +52,14 @@ class EvolutionStrategy():
             self.bestIndGenIt = it 
             self.bestInd = self.population[0]
 
+    def crossover(self):
+        
+        pass
     
+    def mutation(self, ind):
+        
+        for i in range(len(ind.sigma)):
+            new_sigma = ind.sigma[i] * np.exp(self.tau_global * np.random.normal() + self.tau_fine * np.random.normal())
+            ind.sigma[i] = new_sigma if new_sigma > self.sigmaMin else self.sigmaMin
+            ind.X[i] = ind.X[i] + ind.sigma[i] * np.random.normal()    
+        return ind
