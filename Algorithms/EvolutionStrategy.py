@@ -52,9 +52,19 @@ class EvolutionStrategy():
             self.bestIndGenIt = it 
             self.bestInd = self.population[0]
 
-    def crossover(self):
+    def crossover(self, parents):
+        child = np.ndarray(self.dim)
+
+        # two parents, each gene is the average of the two parents
+        for i in range(self.dim):
+            child[i] = (parents[0].X[i] + parents[1].X[i]) / 2
+
+        # two parents, choice each gene from one of them
+        for i in range(self.dim):
+            child[i] = np.random.choice(parents).X[i]
+
+        return child
         
-        pass
     
     def mutation(self, ind):
         
