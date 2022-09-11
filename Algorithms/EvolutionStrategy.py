@@ -29,7 +29,7 @@ class EvolutionStrategy():
             self.population.append(Individuo(X, sigma, fit))
     
     def fitness(self, X):
-        return self.benchMark.eval(X)
+        return -self.benchMark.eval(X)
     
     def isConverged(self, it):
         if self.bestIndGenIt == -1 or self.bestInd is None:
@@ -48,28 +48,55 @@ class EvolutionStrategy():
     def updatePopulation(self, nextGeneration, it):
         self.population = sorted(nextGeneration, key= lambda e: e.fitness, reverse= True)[0:self.populationSize]
 
-        if self.bestInd is None or self.population[0].fitness < self.bestInd.fitness:
+        if self.bestInd is None or self.population[0].fitness > self.bestInd.fitness:
             self.bestIndGenIt = it 
             self.bestInd = self.population[0]
 
     def crossover(self, parents):
-        child = np.ndarray(self.dim)
-
+        child_X = np.zeros(self.dim)
+        child_sigma = np.zeros(self.dim)
+        
         # two parents, each gene is the average of the two parents
         for i in range(self.dim):
-            child[i] = (parents[0].X[i] + parents[1].X[i]) / 2
+            for j in range(self.parentsSize):
+                child_sigma[i] += parents[j].sigma[i]
+            child_sigma[i] /= self.parentsSize
+            child_X[i] = np.random.choice(parents).X[i]
 
-        # two parents, choice each gene from one of them
-        for i in range(self.dim):
-            child[i] = np.random.choice(parents).X[i]
+        # for i in range(self.dim):
+            # child_sigma[i] = np.random.choice(parents).X[i]
+            # child_X[i] = np.random.choice(parents).X[i]
 
-        return child
-        
+        return child_X, child_sigma
     
     def mutation(self, ind):
         
         for i in range(len(ind.sigma)):
             new_sigma = ind.sigma[i] * np.exp(self.tau_global * np.random.normal() + self.tau_fine * np.random.normal())
+            old_sigma = ind.sigma[i]
+            if (new_sigma > 100 or old_sigma > 100):
+                print(new_sigma, old_sigma)
+            
             ind.sigma[i] = new_sigma if new_sigma > self.sigmaMin else self.sigmaMin
-            ind.X[i] = ind.X[i] + ind.sigma[i] * np.random.normal()    
+            valor = ind.X[i] + ind.sigma[i] * np.random.normal()
+            
+            ind.X[i] = valor
         return ind
+    
+    def fit(self, n_iterations):
+        self.initPopulation()
+        
+        for it in range(n_iterations):
+            childs = []
+            for _ in range(self.sonSize):
+                parents = self.selectParents()
+                child_x, child_sigma = self.crossover(parents)
+                ind = Individuo(child_x, child_sigma, self.fitness(child_x))
+                ind = self.mutation(ind)
+                childs.append(ind)
+            self.updatePopulation(self.population + childs, it)
+            
+            if (it % 50 == 0):
+                # print(self.population)
+                print("Iteration: ", it, " Best fitness: ", self.population[0].fitness, " Best alltime: ", self.bestInd)
+            
