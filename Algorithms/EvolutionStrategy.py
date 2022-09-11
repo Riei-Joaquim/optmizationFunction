@@ -29,7 +29,7 @@ class EvolutionStrategy():
             self.population.append(Individuo(X, sigma, fit))
     
     def fitness(self, X):
-        return -self.benchMark.eval(X)
+        return self.benchMark.eval(X)
     
     def isConverged(self, it):
         if self.bestIndGenIt == -1 or self.bestInd is None:
@@ -46,9 +46,9 @@ class EvolutionStrategy():
         return parents
     
     def updatePopulation(self, nextGeneration, it):
-        self.population = sorted(nextGeneration, key= lambda e: e.fitness, reverse= True)[0:self.populationSize]
+        self.population = sorted(nextGeneration, key= lambda e: e.fitness)[0:self.populationSize]
 
-        if self.bestInd is None or self.population[0].fitness > self.bestInd.fitness:
+        if self.bestInd is None or self.population[0].fitness < self.bestInd.fitness:
             self.bestIndGenIt = it 
             self.bestInd = self.population[0]
 
