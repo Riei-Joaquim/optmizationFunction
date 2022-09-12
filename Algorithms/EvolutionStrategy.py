@@ -1,6 +1,8 @@
+from statistics import mean
 import numpy as np
 from Functions.AckleyFunct import Ackley
 from Individual.Individuo import Individuo
+from random import random 
 
 class EvolutionStrategy():
     def __init__(self, lowerBound, upperBound, populationSize, parentsSize):
@@ -19,14 +21,20 @@ class EvolutionStrategy():
         self.bestInd = None
         self.bestIndGenIt = -1
         self.MaxWaitForImp = 100
+        self.medFitness = None
+        self.devFitness = np.ones(self.dim)
+        self.mutationStep = 0.8
 
     def initPopulation(self):
-        for _ in range(self.populationSize):
+        fitness = []
+        for i in range(self.populationSize):
             X = np.random.uniform(self.xMin, self.xMax, self.dim)
             sigma = np.random.uniform(self.sigmaMin, self.sigmaMaxInitial, self.dim)
             
             fit = self.fitness(X)
+            fitness.append(fit)
             self.population.append(Individuo(X, sigma, fit))
+        self.medFitness = mean(fitness)
     
     def fitness(self, X):
         return self.benchMark.eval(X)
@@ -45,27 +53,69 @@ class EvolutionStrategy():
         
         return parents
     
+    def selectParentsByRoulette(self):
+        totFit = 0
+        for i in range(self.populationSize):
+            totFit += self.population[i].fitness
+        
+        rangeForIdx = []
+        sum = 0
+        for i in range(self.populationSize):
+            step = self.population[i].fitness/totFit
+            sum += step
+            rangeForIdx.append(sum)
+
+
+        parents = []
+        for i in range(self.parentsSize):
+            select = random()
+            for j in range(self.populationSize):
+                if select <= rangeForIdx[j] or j == (self.populationSize - 1):
+                    parents.append(self.population[j])
+                    break
+        
+        return parents
+    
     def updatePopulation(self, nextGeneration, it):
         self.population = sorted(nextGeneration, key= lambda e: e.fitness)[0:self.populationSize]
 
         if self.bestInd is None or self.population[0].fitness < self.bestInd.fitness:
             self.bestIndGenIt = it 
             self.bestInd = self.population[0]
+        
+        sucessInMut = 0
+        fitness = []
+        for np in self.population:
+            fitness.append(np.fitness)
+            if np.fitness <=  self.medFitness:
+                sucessInMut += 1
+
+        sRate = sucessInMut/self.populationSize
+        if sRate > 0.2:
+            self.tau_fine / self.mutationStep
+        elif sRate < 0.2:
+            self.tau_fine * self.mutationStep
+        
+        self.medFitness = mean(fitness)
 
     def crossover(self, parents):
         child_X = np.zeros(self.dim)
         child_sigma = np.zeros(self.dim)
         
         # two parents, each gene is the average of the two parents
-        for i in range(self.dim):
-            for j in range(self.parentsSize):
-                child_sigma[i] += parents[j].sigma[i]
-            child_sigma[i] /= self.parentsSize
-            child_X[i] = np.random.choice(parents).X[i]
+        #for i in range(self.dim):
+        #    for j in range(self.parentsSize):
+        #        child_sigma[i] += parents[j].sigma[i]
+        #    child_sigma[i] /= self.parentsSize
+        #    child_X[i] = np.random.choice(parents).X[i]
 
-        # for i in range(self.dim):
-            # child_sigma[i] = np.random.choice(parents).X[i]
-            # child_X[i] = np.random.choice(parents).X[i]
+        for i in range(self.dim):
+            #sum = 0
+            #for e in parents:
+            #    sum += e.sigma[i]
+            #child_sigma[i] = sum/ self.parentsSize
+            child_sigma[i] = np.random.choice(parents).sigma[i]
+            child_X[i] = np.random.choice(parents).X[i]
 
         return child_X, child_sigma
     
@@ -74,11 +124,11 @@ class EvolutionStrategy():
         for i in range(len(ind.sigma)):
             new_sigma = ind.sigma[i] * np.exp(self.tau_global * np.random.normal() + self.tau_fine * np.random.normal())
             old_sigma = ind.sigma[i]
-            if (new_sigma > 100 or old_sigma > 100):
-                print(new_sigma, old_sigma)
+            #if (new_sigma > 100 or old_sigma > 100):
+                #print(new_sigma, old_sigma)
             
-            ind.sigma[i] = new_sigma if new_sigma > self.sigmaMin else self.sigmaMin
-            valor = ind.X[i] + ind.sigma[i] * np.random.normal()
+            ind.sigma[i] = new_sigma #if new_sigma > self.sigmaMin else self.sigmaMin
+            valor = ind.X[i] + ind.sigma[i] * np.random.normal(0, self.tau_fine)
             
             ind.X[i] = valor
         return ind
@@ -89,12 +139,12 @@ class EvolutionStrategy():
         for it in range(n_iterations):
             childs = []
             for _ in range(self.sonSize):
-                parents = self.selectParents()
+                parents = self.selectParentsByRoulette()
                 child_x, child_sigma = self.crossover(parents)
                 ind = Individuo(child_x, child_sigma, self.fitness(child_x))
                 ind = self.mutation(ind)
                 childs.append(ind)
-            self.updatePopulation(self.population + childs, it)
+            self.updatePopulation(childs, it)
             
             if (it % 50 == 0):
                 # print(self.population)
