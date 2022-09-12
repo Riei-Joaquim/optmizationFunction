@@ -1,11 +1,11 @@
 import numpy as np
 
 class Ackley:
-    def __init__(self, a, b, c, d):
-        self._a = a
-        self._b = b
-        self._c = c
-        self._d = d
+    def __init__(self, c1, c2, c3, dim):
+        self._a = c1
+        self._b = c2
+        self._c = c3
+        self._d = dim
     
     def eval(self, xList):
         sumP1 = 0

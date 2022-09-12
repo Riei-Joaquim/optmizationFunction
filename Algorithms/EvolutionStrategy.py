@@ -20,10 +20,12 @@ class EvolutionStrategy():
         self.tau_fine = 1/np.sqrt(2 * np.sqrt(self.dim))
         self.bestInd = None
         self.bestIndGenIt = -1
-        self.MaxWaitForImp = 100
+        self.MaxWaitForImp = 1000
         self.medFitness = None
         self.devFitness = np.ones(self.dim)
         self.mutationStep = 0.8
+        self.minEvolutionStep = 1e-3
+        self.curEvolutionStep = None
 
     def initPopulation(self):
         fitness = []
@@ -43,8 +45,10 @@ class EvolutionStrategy():
         if self.bestIndGenIt == -1 or self.bestInd is None:
             return False
 
-        if abs(it - self.bestIndGenIt) > self.MaxWaitForImp:
+        if abs(it - self.bestIndGenIt) > self.MaxWaitForImp and (self.curEvolutionStep is not None and self.curEvolutionStep < self.minEvolutionStep):
             return True
+        
+        return False
         
     def selectParents(self):
         parents = []
@@ -80,7 +84,12 @@ class EvolutionStrategy():
         self.population = sorted(nextGeneration, key= lambda e: e.fitness)[0:self.populationSize]
 
         if self.bestInd is None or self.population[0].fitness < self.bestInd.fitness:
-            self.bestIndGenIt = it 
+            if self.bestInd is not None:
+                self.curEvolutionStep = abs(abs(self.bestInd.fitness) - abs(self.population[0].fitness))
+                
+                if self.curEvolutionStep > self.minEvolutionStep:
+                    self.bestIndGenIt = it 
+
             self.bestInd = self.population[0]
         
         sucessInMut = 0
@@ -110,10 +119,6 @@ class EvolutionStrategy():
         #    child_X[i] = np.random.choice(parents).X[i]
 
         for i in range(self.dim):
-            #sum = 0
-            #for e in parents:
-            #    sum += e.sigma[i]
-            #child_sigma[i] = sum/ self.parentsSize
             child_sigma[i] = np.random.choice(parents).sigma[i]
             child_X[i] = np.random.choice(parents).X[i]
 
@@ -123,7 +128,7 @@ class EvolutionStrategy():
         
         for i in range(len(ind.sigma)):
             new_sigma = ind.sigma[i] * np.exp(self.tau_global * np.random.normal() + self.tau_fine * np.random.normal())
-            old_sigma = ind.sigma[i]
+            #old_sigma = ind.sigma[i]
             #if (new_sigma > 100 or old_sigma > 100):
                 #print(new_sigma, old_sigma)
             
@@ -149,4 +154,8 @@ class EvolutionStrategy():
             if (it % 50 == 0):
                 # print(self.population)
                 print("Iteration: ", it, " Best fitness: ", self.population[0].fitness, " Best alltime: ", self.bestInd)
+            
+            if self.isConverged(it):
+                print("Converged -> Iteration: ", it, " Best fitness: ", self.population[0].fitness, " Best alltime: ", self.bestInd)
+                break
             
