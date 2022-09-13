@@ -1,8 +1,11 @@
+from functools import reduce
 from statistics import mean
 import numpy as np
 from Functions.AckleyFunct import Ackley
 from Individual.Individuo import Individuo
 from random import random 
+import matplotlib.pyplot as plt 
+import datetime
 
 class EvolutionStrategy():
     def __init__(self, lowerBound, upperBound, populationSize, parentsSize):
@@ -112,15 +115,15 @@ class EvolutionStrategy():
         child_sigma = np.zeros(self.dim)
         
         # two parents, each gene is the average of the two parents
-        #for i in range(self.dim):
-        #    for j in range(self.parentsSize):
-        #        child_sigma[i] += parents[j].sigma[i]
-        #    child_sigma[i] /= self.parentsSize
-        #    child_X[i] = np.random.choice(parents).X[i]
-
         for i in range(self.dim):
-            child_sigma[i] = np.random.choice(parents).sigma[i]
-            child_X[i] = np.random.choice(parents).X[i]
+           for j in range(self.parentsSize):
+               child_sigma[i] += parents[j].sigma[i]
+           child_sigma[i] /= self.parentsSize
+           child_X[i] = np.random.choice(parents).X[i]
+
+        # for i in range(self.dim):
+        #     child_sigma[i] = np.random.choice(parents).sigma[i]
+        #     child_X[i] = np.random.choice(parents).X[i]
 
         return child_X, child_sigma
     
@@ -133,7 +136,7 @@ class EvolutionStrategy():
                 #print(new_sigma, old_sigma)
             
             ind.sigma[i] = new_sigma #if new_sigma > self.sigmaMin else self.sigmaMin
-            valor = ind.X[i] + ind.sigma[i] * np.random.normal(0, self.tau_fine)
+            valor = ind.X[i] + ind.sigma[i] * np.random.normal()
             
             ind.X[i] = valor
         return ind
@@ -141,6 +144,8 @@ class EvolutionStrategy():
     def fit(self, n_iterations):
         self.initPopulation()
         
+        iteration = []
+        fitness_it = []
         for it in range(n_iterations):
             childs = []
             for _ in range(self.sonSize):
@@ -151,11 +156,23 @@ class EvolutionStrategy():
                 childs.append(ind)
             self.updatePopulation(childs, it)
             
-            if (it % 50 == 0):
+            
+            if (it % 10 == 0):
                 # print(self.population)
+                iteration.append(it)
+                fitness_it.append(self.bestInd.fitness)
+                
+                
                 print("Iteration: ", it, " Best fitness: ", self.population[0].fitness, " Best alltime: ", self.bestInd)
             
             if self.isConverged(it):
                 print("Converged -> Iteration: ", it, " Best fitness: ", self.population[0].fitness, " Best alltime: ", self.bestInd)
                 break
-            
+        
+        plt.xlabel('Iteration')
+        plt.ylabel('Best Fitness')
+        plt.plot(iteration, fitness_it)
+        
+        generation_time = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M_%S')
+        path_graph = "data/individuals_execution_" + generation_time + ".png"
+        plt.savefig(path_graph)
