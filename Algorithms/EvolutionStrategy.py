@@ -1,14 +1,14 @@
-from functools import reduce
-from statistics import mean
+from statistics import mean, stdev
 import numpy as np
 from Functions.AckleyFunct import Ackley
 from Individual.Individuo import Individuo
 from random import random 
 import matplotlib.pyplot as plt 
 import datetime
+from executionUtils import ExecutionStrategy
 
 class EvolutionStrategy():
-    def __init__(self, lowerBound, upperBound, populationSize, parentsSize):
+    def __init__(self, lowerBound, upperBound, populationSize, parentsSize, execMode):
         self.xMax = upperBound
         self.xMin = lowerBound
         self.sigmaMaxInitial = 4
@@ -16,6 +16,7 @@ class EvolutionStrategy():
         self.populationSize = populationSize
         self.sonSize = 7* self.populationSize
         self.dim = 30
+        self.executionMode = execMode
         self.parentsSize = parentsSize
         self.benchMark = Ackley(20, 0.2, 2*np.pi, self.dim)
         self.population = []
@@ -25,8 +26,7 @@ class EvolutionStrategy():
         self.bestIndGenIt = -1
         self.MaxWaitForImp = 1000
         self.medFitness = None
-        self.devFitness = np.ones(self.dim)
-        self.mutationStep = 0.8
+        self.devFitness = None
         self.minEvolutionStep = 1e-3
         self.curEvolutionStep = None
 
@@ -40,6 +40,7 @@ class EvolutionStrategy():
             fitness.append(fit)
             self.population.append(Individuo(X, sigma, fit))
         self.medFitness = mean(fitness)
+        self.devFitness = stdev(fitness)
     
     def fitness(self, X):
         return self.benchMark.eval(X)
@@ -95,35 +96,27 @@ class EvolutionStrategy():
 
             self.bestInd = self.population[0]
         
-        sucessInMut = 0
         fitness = []
         for np in self.population:
             fitness.append(np.fitness)
-            if np.fitness <=  self.medFitness:
-                sucessInMut += 1
-
-        sRate = sucessInMut/self.populationSize
-        if sRate > 0.2:
-            self.tau_fine / self.mutationStep
-        elif sRate < 0.2:
-            self.tau_fine * self.mutationStep
         
         self.medFitness = mean(fitness)
+        self.devFitness = stdev(fitness)
 
     def crossover(self, parents):
         child_X = np.zeros(self.dim)
         child_sigma = np.zeros(self.dim)
         
         # two parents, each gene is the average of the two parents
-        for i in range(self.dim):
-           for j in range(self.parentsSize):
-               child_sigma[i] += parents[j].sigma[i]
-           child_sigma[i] /= self.parentsSize
-           child_X[i] = np.random.choice(parents).X[i]
+        #for i in range(self.dim):
+        #   for j in range(self.parentsSize):
+        #       child_sigma[i] += parents[j].sigma[i]
+        #   child_sigma[i] /= self.parentsSize
+        #   child_X[i] = np.random.choice(parents).X[i]
 
-        # for i in range(self.dim):
-        #     child_sigma[i] = np.random.choice(parents).sigma[i]
-        #     child_X[i] = np.random.choice(parents).X[i]
+        for i in range(self.dim):
+            child_sigma[i] = np.random.choice(parents).sigma[i]
+            child_X[i] = np.random.choice(parents).X[i]
 
         return child_X, child_sigma
     
@@ -136,7 +129,7 @@ class EvolutionStrategy():
                 #print(new_sigma, old_sigma)
             
             ind.sigma[i] = new_sigma #if new_sigma > self.sigmaMin else self.sigmaMin
-            valor = ind.X[i] + ind.sigma[i] * np.random.normal()
+            valor = ind.X[i] + ind.sigma[i] * np.random.normal(0,self.tau_fine)
             
             ind.X[i] = valor
         return ind
@@ -146,6 +139,8 @@ class EvolutionStrategy():
         
         iteration = []
         fitness_it = []
+        popFitnessMed = []
+        popFitnessDev = []
         for it in range(n_iterations):
             childs = []
             for _ in range(self.sonSize):
@@ -161,7 +156,8 @@ class EvolutionStrategy():
                 # print(self.population)
                 iteration.append(it)
                 fitness_it.append(self.bestInd.fitness)
-                
+                popFitnessMed.append(self.medFitness)
+                popFitnessDev.append(self.devFitness)
                 
                 print("Iteration: ", it, " Best fitness: ", self.population[0].fitness, " Best alltime: ", self.bestInd)
             
@@ -171,7 +167,7 @@ class EvolutionStrategy():
         
         plt.xlabel('Iteration')
         plt.ylabel('Best Fitness')
-        plt.plot(iteration, fitness_it)
+        plt.plot(iteration, fitness_it, popFitnessMed, popFitnessDev)
         
         generation_time = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M_%S')
         path_graph = "data/individuals_execution_" + generation_time + ".png"
