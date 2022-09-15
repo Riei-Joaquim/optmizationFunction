@@ -1,6 +1,7 @@
 from statistics import mean, stdev
 import numpy as np
 from Functions.AckleyFunct import Ackley
+from Functions.RastriginFunct import Rastrigin
 from Functions.SchwefelFunct import Schwefel
 from Individual.Individuo import Individuo
 from random import random 
@@ -16,13 +17,15 @@ class EvolutionStrategy():
         self.sigmaMaxInitial = 4
         self.sigmaMin = 0.5
         self.populationSize = populationSize
-        self.sonSize = 5* self.populationSize
+        self.sonSize = 7* self.populationSize
         self.dim = 30
         self.executionMode = execMode
         self.parentsSize = parentsSize
 
         if self.executionMode == ExecutionStrategy.EEExplorationCompensationInSchwefel:
             self.benchMark = Schwefel(self.dim)
+        elif self.executionMode == ExecutionStrategy.EEExplorationCompensationInRastrigin:
+            self.benchMark = Rastrigin(self.dim)
         else:
             self.benchMark = Ackley(20, 0.2, 2*np.pi, self.dim)
         self.population = []

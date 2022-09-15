@@ -7,3 +7,6 @@ class ExecutionStrategy(Enum):
     EEMutationCompensation = 3
     EEExplorationCompensation = 4
     EEExplorationCompensationInSchwefel = 5
+    EEExplorationCompensationInRastrigin = 6
+    GABasic = 7
+    GABasicInRastrigin = 8

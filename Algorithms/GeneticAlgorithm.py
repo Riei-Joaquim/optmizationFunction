@@ -4,13 +4,15 @@ from random import paretovariate, random
 from statistics import mean, stdev
 import numpy as np
 from Functions.AckleyFunct import Ackley
+from Functions.RastriginFunct import Rastrigin
 from Individual.Individuo import Individuo
 import time
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
+from executionUtils import ExecutionStrategy 
 
 class GA:
     
-    def __init__(self, nGenes, lowerBound, upperBound, populationSize):
+    def __init__(self, nGenes, lowerBound, upperBound, populationSize, execMode):
         self.nGenes = nGenes
         self.lowerBound = lowerBound
         self.upperBound = upperBound
@@ -20,7 +22,11 @@ class GA:
         self.n_children = 2
         self.alpha = 0.6
         self.population = []
-        self.benchMark = Ackley(20, 0.2, 2*np.pi, self.nGenes)
+        self.executionMode = execMode
+        if self.executionMode == ExecutionStrategy.GABasicInRastrigin:
+            self.benchMark = Rastrigin(self.nGenes)
+        else:
+            self.benchMark = Ackley(20, 0.2, 2*np.pi, self.nGenes)
         self.bestInd = None
         self.bestIndGenIt = -1
         self.medFitness = None
