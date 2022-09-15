@@ -2,6 +2,7 @@
 
 ## Function
 - [Ackley function](https://en.wikipedia.org/wiki/Ackley_function)
+- [Schwefel function](https://www.sfu.ca/~ssurjano/schwef.html)
 
 ## Algorithms
 - EvolutionStrategy
