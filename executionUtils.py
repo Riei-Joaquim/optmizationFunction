@@ -6,3 +6,4 @@ class ExecutionStrategy(Enum):
     EEInverseRoullette = 2
     EEMutationCompensation = 3
     EEExplorationCompensation = 4
+    EEExplorationCompensationInSchwefel = 5
