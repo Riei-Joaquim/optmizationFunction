@@ -2,6 +2,7 @@
 
 ## Function
 - [Ackley function](https://en.wikipedia.org/wiki/Ackley_function)
+- [Rastrigin function](https://en.wikipedia.org/wiki/Rastrigin_function)
 
 ## Algorithms
 - EvolutionStrategy

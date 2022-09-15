@@ -1,12 +1,18 @@
+import datetime
 from functools import reduce
 from random import paretovariate, random
+from statistics import mean, stdev
 import numpy as np
 from Functions.AckleyFunct import Ackley
+from Functions.RastriginFunct import Rastrigin
 from Individual.Individuo import Individuo
+import time
+import matplotlib.pyplot as plt
+from executionUtils import ExecutionStrategy 
 
 class GA:
     
-    def __init__(self, nGenes, lowerBound, upperBound, populationSize):
+    def __init__(self, nGenes, lowerBound, upperBound, populationSize, execMode):
         self.nGenes = nGenes
         self.lowerBound = lowerBound
         self.upperBound = upperBound
@@ -16,15 +22,27 @@ class GA:
         self.n_children = 2
         self.alpha = 0.6
         self.population = []
-        self.benchMark = Ackley(20, 0.2, 2*np.pi, self.nGenes)
+        self.executionMode = execMode
+        if self.executionMode == ExecutionStrategy.GABasicInRastrigin:
+            self.benchMark = Rastrigin(self.nGenes)
+        else:
+            self.benchMark = Ackley(20, 0.2, 2*np.pi, self.nGenes)
         self.bestInd = None
         self.bestIndGenIt = -1
+        self.medFitness = None
+        self.devFitness = None
         
     def init_population(self):
-        for i in range(self.populationSize):
+        fitness = []
+        for _ in range(self.populationSize):
             X = np.random.uniform(self.lowerBound, self.upperBound, self.nGenes)
-            ind = Individuo(X, None, self.fitness(X))
+            fit = self.fitness(X)
+            fitness.append(fit)
+            ind = Individuo(X, None, fit)
             self.population.append(ind)
+        
+        self.medFitness = mean(fitness)
+        self.devFitness = stdev(fitness)
     
     def fitness(self, X):
         return self.benchMark.eval(X)
@@ -35,6 +53,13 @@ class GA:
         if self.bestInd is None or self.population[0].fitness < self.bestInd.fitness:
             self.bestIndGenIt = it 
             self.bestInd = self.population[0]
+        
+        fitness = []
+        for np in self.population:
+            fitness.append(np.fitness)
+
+        self.medFitness = mean(fitness)
+        self.devFitness = stdev(fitness)
     
     def crossover(self, parents):
         children = []
@@ -87,7 +112,11 @@ class GA:
 
     def fit(self, n_iterations):
         self.init_population()
-        
+        startTime = time.perf_counter_ns()
+        iteration = []
+        fitness_it = []
+        popFitnessMed = []
+        popFitnessDev = []
         for it in range(n_iterations):
             parents = self.parent_selection(2)
             children = self.crossover(parents)
@@ -97,4 +126,22 @@ class GA:
             
             if (it % 1000 == 0):
                 # print(self.population)
+                iteration.append(it)
+                fitness_it.append(self.bestInd.fitness)
+                popFitnessMed.append(self.medFitness)
+                popFitnessDev.append(self.devFitness)
                 print("Iteration: ", it, " Best fitness: ", self.population[0].fitness, " Best alltime: ", self.bestInd)
+        
+        timeExec = (time.perf_counter_ns() - startTime)/1e9
+        print("time To Execution: ", timeExec)
+
+        plt.title("Fitness Evolution")
+        plt.xlabel('Iteration')
+        plt.ylabel('Fitness')
+        plt.plot(iteration, popFitnessMed, color='g', label='Median')
+        plt.plot(iteration, popFitnessDev, color='b', label='Deviation')
+        plt.plot(iteration, fitness_it, color='r', label='Best Known')
+        plt.legend()
+        generation_time = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M_%S')
+        path_graph = "data/GAindividuals_execution_" + generation_time + ".png"
+        plt.savefig(path_graph)
